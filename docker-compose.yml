@@ -69,7 +69,6 @@ services:
 
   bitwarden_rs:
     image: ${BITWARDEN_DOCKER_IMAGE}
-    container_name: bitwarden_rs
     restart: always
     volumes:
       - ${BASE_DATA_LOCATION}/bitwardenrs:/data

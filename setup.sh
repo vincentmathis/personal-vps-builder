@@ -22,8 +22,10 @@ sudo add-apt-repository \
 sudo apt update;
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose;
 
-mkdir -p $BASE_DATA_LOCATION/{database,letsencrypt,nextcloud};
-touch $BASE_DATA_LOCATION/letsencrypt/acme.json;
-chmod 600 $BASE_DATA_LOCATION/letsencrypt/acme.json;
+mkdir -p $BASE_DATA_LOCATION/{database,traefik,nextcloud};
+touch $BASE_DATA_LOCATION/traefik/acme.json;
+chmod 600 $BASE_DATA_LOCATION/traefik/acme.json;
 
+docker network create traefik-network;
+docker network create database-network;
 docker-compose up -d;

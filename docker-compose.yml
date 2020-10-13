@@ -1,7 +1,8 @@
 version: "3.3"
 services:
-  reverse-proxy:
+  traefik:
     image: ${TRAEFIK_DOCKER_IMAGE}
+    container_name: traefik
     restart: always
     command:
       - "--api.insecure=${TRAEFIK_API_INSECURE_ENABLED}"
@@ -9,23 +10,26 @@ services:
       - "--providers.docker.exposedByDefault=false"
       - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
+      # This is for testing to prevent rate limit:
+      - "--certificatesResolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--certificatesResolvers.le.acme.tlsChallenge=true"
       - "--certificatesResolvers.le.acme.email=${TRAEFIK_LETSENCRYPT_EMAIL}"
       - "--certificatesResolvers.le.acme.httpChallenge=true"
       - "--certificatesResolvers.le.acme.httpChallenge.entryPoint=web"
       - "--certificatesResolvers.le.acme.storage=acme.json"
     ports:
-      - 80:80
-      - 443:443
-      - 8080:8080
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${BASE_DATA_LOCATION}/letsencrypt/acme.json:/acme.json
+      - ${BASE_DATA_LOCATION}/traefik/acme.json:/acme.json
     networks:
-      - web
+      - traefik-network
 
   nextcloud:
     image: ${NEXTCLOUD_DOCKER_IMAGE}
+    container_name: nextcloud
     restart: always
     volumes:
       - ${BASE_DATA_LOCATION}/nextcloud:/var/www/html
@@ -33,7 +37,7 @@ services:
         - "8080"
     labels:
       - traefik.enable=true
-      - traefik.docker.network=web
+      - traefik.docker.network=traefik-network
       - traefik.http.routers.nextcloud.rule=Host(`${NEXTCLOUD_URL}`)
       - traefik.http.routers.nextcloud.tls=true
       - traefik.http.routers.nextcloud.tls.certresolver=le
@@ -47,14 +51,13 @@ services:
       - MYSQL_USER=${MARIADB_NEXTCLOUD_USER}
       - MYSQL_PASSWORD=${MARIADB_NEXTCLOUD_PASSWORD}
       - MYSQL_HOST=database
-    links:
-      - "database"
     networks:
-      - web
-      - database
+      - traefik-network
+      - database-network
   
   database:
     image: ${MARIADB_DOCKER_IMAGE}
+    container_name: database
     restart: always
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     volumes:
@@ -65,19 +68,20 @@ services:
       - MYSQL_USER=${MARIADB_NEXTCLOUD_USER}
       - MYSQL_PASSWORD=${MARIADB_NEXTCLOUD_PASSWORD}
     networks:
-      - database
+      - database-network
 
-  bitwarden_rs:
+  bitwarden:
     image: ${BITWARDEN_DOCKER_IMAGE}
+    container_name: bitwarden
     restart: always
     volumes:
-      - ${BASE_DATA_LOCATION}/bitwardenrs:/data
+      - ${BASE_DATA_LOCATION}/bitwarden:/data
     expose:
-      - 3012
-      - 80
+      - "3012"
+      - "80"
     labels:
       - traefik.enable=true
-      - traefik.docker.network=web
+      - traefik.docker.network=traefik-network
       - traefik.http.middlewares.redirect-https.redirectScheme.scheme=https
       - traefik.http.middlewares.redirect-https.redirectScheme.permanent=true
       - traefik.http.routers.bitwarden-ui-https.rule=Host(`${BITWARDEN_URL}`)
@@ -103,8 +107,12 @@ services:
     environment:
       WEBSOCKET_ENABLED: 'true' # Required to use websockets
     networks:
-      - web
+      - traefik-network
 
 networks:
-  web:
-  database:
+  traefik-network:
+    external:
+      name: traefik-network
+  database-network:
+    external:
+      name: database-network

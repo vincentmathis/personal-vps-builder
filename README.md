@@ -1,6 +1,7 @@
 # personal-vps-builder
 
 Sets up nextcloud and bitwarden as docker containers with traefik as reverse proxy and mariadb as database.
+(Modified from https://github.com/JoshBlades/ncbuilder)
 
 ## Install 
 
@@ -10,7 +11,7 @@ The commands will be for bash (Linux).
 clone the repo to the server
 
 ```
-git clone https://github.com/JoshBlades/ncbuilder.git
+https://github.com/vincentmathis/personal-vps-builder.git
 ```
 Then go in to the folder and make the script executable. 
 ```

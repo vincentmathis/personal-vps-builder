@@ -11,7 +11,7 @@ services:
       - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
       # This is for testing to prevent rate limit:
-      - "--certificatesResolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
+      #- "--certificatesResolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--certificatesResolvers.le.acme.tlsChallenge=true"
       - "--certificatesResolvers.le.acme.email=${TRAEFIK_LETSENCRYPT_EMAIL}"
       - "--certificatesResolvers.le.acme.httpChallenge=true"
@@ -51,6 +51,7 @@ services:
       - MYSQL_USER=${MARIADB_NEXTCLOUD_USER}
       - MYSQL_PASSWORD=${MARIADB_NEXTCLOUD_PASSWORD}
       - MYSQL_HOST=database
+      - TRUSTED_PROXIES=${TRAEFIK_IP}
     networks:
       - traefik-network
       - database-network
@@ -67,6 +68,18 @@ services:
       - MYSQL_DATABASE=${MARIADB_NEXTCLOUD_DATABASE}
       - MYSQL_USER=${MARIADB_NEXTCLOUD_USER}
       - MYSQL_PASSWORD=${MARIADB_NEXTCLOUD_PASSWORD}
+    networks:
+      - database-network
+
+  cron:
+    image: ${NEXTCLOUD_DOCKER_IMAGE}
+    container_name: nextcloud-cron
+    restart: always
+    volumes:
+      - ${BASE_DATA_LOCATION}/nextcloud:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - database
     networks:
       - database-network
 

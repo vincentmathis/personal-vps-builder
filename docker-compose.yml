@@ -119,6 +119,7 @@ services:
       - traefik.http.services.bitwarden-websocket.loadbalancer.server.port=3012
     environment:
       WEBSOCKET_ENABLED: 'true' # Required to use websockets
+      TZ: 'Europe/Berlin'
     networks:
       - traefik-network
 

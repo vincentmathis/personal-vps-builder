@@ -46,6 +46,9 @@ services:
       - traefik.http.routers.nextcloud-web.middlewares=nextcloud-redirect-web-secure
       - traefik.http.routers.nextcloud-web.rule=Host(`${NEXTCLOUD_URL}`)
       - traefik.http.routers.nextcloud-web.entrypoints=web
+      - traefik.http.routers.nextcloud.middlewares=hsts@docker
+      - traefik.http.middlewares.hsts.headers.stsSeconds=15552000
+      - traefik.http.middlewares.hsts.headers.stsIncludeSubdomains=true
     environment:
       - MYSQL_DATABASE=${MARIADB_NEXTCLOUD_DATABASE}
       - MYSQL_USER=${MARIADB_NEXTCLOUD_USER}

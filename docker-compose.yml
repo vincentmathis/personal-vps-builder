@@ -70,6 +70,10 @@ services:
       - MYSQL_PASSWORD=${MARIADB_NEXTCLOUD_PASSWORD}
     networks:
       - database-network
+    logging:
+        options:
+            max-size: "100m"
+            max-file: "10"
 
   cron:
     image: ${NEXTCLOUD_DOCKER_IMAGE}

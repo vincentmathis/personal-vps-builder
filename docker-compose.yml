@@ -1,4 +1,3 @@
-version: "3.3"
 services:
   traefik:
     image: ${TRAEFIK_DOCKER_IMAGE}
@@ -132,8 +131,8 @@ services:
 
 networks:
   traefik-network:
-    external:
-      name: traefik-network
+    name: traefik-network
+    external: true
   database-network:
-    external:
-      name: database-network
+    name: database-network
+    external: true

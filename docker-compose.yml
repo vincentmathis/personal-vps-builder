@@ -2,7 +2,7 @@ services:
   traefik:
     image: ${TRAEFIK_DOCKER_IMAGE}
     container_name: traefik
-    restart: always
+    restart: unless-stopped
     command:
       - "--api.insecure=${TRAEFIK_API_INSECURE_ENABLED}"
       - "--providers.docker=true"
@@ -27,7 +27,7 @@ services:
   nextcloud:
     image: ${NEXTCLOUD_DOCKER_IMAGE}
     container_name: nextcloud
-    restart: always
+    restart: unless-stopped
     volumes:
       - ${BASE_DATA_LOCATION}/nextcloud:/var/www/html
     expose:
@@ -59,7 +59,7 @@ services:
   database:
     image: ${MARIADB_DOCKER_IMAGE}
     container_name: database
-    restart: always
+    restart: unless-stopped
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     volumes:
       - ${BASE_DATA_LOCATION}/database:/var/lib/mysql
@@ -78,7 +78,7 @@ services:
   cron:
     image: ${NEXTCLOUD_DOCKER_IMAGE}
     container_name: nextcloud-cron
-    restart: always
+    restart: unless-stopped
     volumes:
       - ${BASE_DATA_LOCATION}/nextcloud:/var/www/html
     entrypoint: /cron.sh
@@ -90,7 +90,7 @@ services:
   bitwarden:
     image: ${BITWARDEN_DOCKER_IMAGE}
     container_name: bitwarden
-    restart: always
+    restart: unless-stopped
     volumes:
       - ${BASE_DATA_LOCATION}/bitwarden:/data
     expose:

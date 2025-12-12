@@ -13,8 +13,6 @@ services:
       #- "--certificatesResolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--certificatesResolvers.le.acme.tlsChallenge=true"
       - "--certificatesResolvers.le.acme.email=${TRAEFIK_LETSENCRYPT_EMAIL}"
-      - "--certificatesResolvers.le.acme.httpChallenge=true"
-      - "--certificatesResolvers.le.acme.httpChallenge.entryPoint=web"
       - "--certificatesResolvers.le.acme.storage=acme.json"
     ports:
       - "80:80"

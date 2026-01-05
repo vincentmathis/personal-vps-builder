@@ -47,6 +47,7 @@ services:
       - traefik.http.middlewares.hsts.headers.stsSeconds=15552000
       - traefik.http.middlewares.hsts.headers.stsIncludeSubdomains=true
     environment:
+      - REDIS_HOST=redis
       - MYSQL_DATABASE=${MARIADB_NEXTCLOUD_DATABASE}
       - MYSQL_USER=${MARIADB_NEXTCLOUD_USER}
       - MYSQL_PASSWORD=${MARIADB_NEXTCLOUD_PASSWORD}
@@ -54,6 +55,15 @@ services:
       - TRUSTED_PROXIES=${TRAEFIK_IP}
     networks:
       - traefik-network
+      - database-network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    networks:
       - database-network
   
   database:
@@ -82,6 +92,8 @@ services:
     volumes:
       - ${BASE_DATA_LOCATION}/nextcloud:/var/www/html
     entrypoint: /cron.sh
+    environment:
+     - REDIS_HOST=redis
     depends_on:
       - database
     networks:

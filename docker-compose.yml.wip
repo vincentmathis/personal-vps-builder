@@ -162,6 +162,40 @@ services:
       TZ: 'Europe/Berlin'
     networks:
       - traefik-network
+ 
+ soft-serve:
+    image: charmcli/soft-serve:latest
+    container_name: soft-serve
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+
+      # --- 1. THE CERTIFICATE HELPER (HTTP) ---
+      # This router's only job is to get the SSL certificate on port 443
+      - "traefik.http.routers.softserve-cert.rule=Host(`${SOFTSERVE_URL}`)"
+      - "traefik.http.routers.softserve-cert.entrypoints=websecure"
+      - "traefik.http.routers.softserve-cert.tls.certresolver=le"
+      - "traefik.http.services.softserve-cert.loadbalancer.server.port=23232"
+
+      # --- 2. THE SSH/GIT ROUTER (TCP) ---
+      # This router uses the certificate generated above
+      - "traefik.tcp.routers.softserve-ssh.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.softserve-ssh.entrypoints=ssh-git"
+      - "traefik.tcp.services.softserve-ssh.loadbalancer.server.port=23231"
+      # IMPORTANT: Attach the certificate to the TCP router manually
+      - "traefik.tcp.routers.softserve-ssh.tls=true"
+      - "traefik.tcp.routers.softserve-ssh.tls.certresolver=le"
+      - "traefik.tcp.routers.softserve-ssh.tls.domains[0].main=${SOFTSERVE_URL}"
+    expose:
+      - "23231" # SSH
+      - "23232" # Web
+    environment:
+      - SOFT_SERVE_INITIAL_ADMIN_KEYS=${SOFTSERVE_ADMINKEY}
+    volumes:
+      - ${BASE_DATA_LOCATION}/soft-serve:/soft-serve
+    networks:
+      - traefik-network
 
 networks:
   traefik-network:

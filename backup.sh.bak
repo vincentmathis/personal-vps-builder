@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+## MOVE THIS TO /usr/local/bin/backup.sh
+
+##
+## Setzten von Umgebungsvariablen
+##
+
+## falls nicht der Standard SSH Key verwendet wird können
+## Sie hier den Pfad zu Ihrem private Key angeben
+# export BORG_RSH="ssh -i /home/userXY/.ssh/id_ed25519"
+
+## Damit das Passwort vom Repository nicht eingegeben werden muss
+## kann es in der Umgepungsvariable gesetzt werden
+export BORG_PASSPHRASE="parrot-unvisited-precise-ditzy"
+
+##
+## Setzten von Variablen
+##
+
+LOG="/var/log/borg/backup.log"
+BACKUP_USER="u244868"
+REPOSITORY_DIR="personal-vps-data"
+
+## Hinweis: Für die Verwendung mit einem Backup-Account muss
+## 'your-storagebox.de' in 'your-backup.de' geändert werden.
+
+REPOSITORY="ssh://${BACKUP_USER}@${BACKUP_USER}.your-storagebox.de:23/./backups/${REPOSITORY_DIR}"
+
+##
+## Ausgabe in Logdatei schreiben
+##
+
+# 2. Prüfe, ob der Ordner existiert, sonst erstelle ihn
+if [ ! -d "$(dirname "$LOG")" ]; then
+    mkdir -p "$(dirname "$LOG")"
+fi
+
+# 3. Prüfe, ob die Datei existiert, sonst erstelle sie
+if [ ! -f "$LOG" ]; then
+    touch "$LOG"
+fi
+
+exec > >(tee -i ${LOG})
+exec 2>&1
+
+echo "###### Backup gestartet: $(date) ######"
+
+##
+## An dieser Stelle können verschiedene Aufgaben vor der
+## Übertragung der Dateien ausgeführt werden, wie z.B.
+##
+## - Liste der installierten Software erstellen
+## - Datenbank Dump erstellen
+##
+
+docker exec --user www-data nextcloud php occ maintenance:mode --on
+echo "Erstelle Nextclouds Datenbank-Dump..."
+docker exec nextcloud mysqldump --single-transaction -h localhost -u nextcloud -p6bd772f69f63be0877cfa4a3056085fd nextcloud > /mnt/data/nextcloud/database-dumps/nextcloud-sqldump-`date +"%Y%m%d"`.bak
+docker exec --user www-data nextcloud php occ maintenance:mode --off
+echo "Erstelle Bitwardens Datenbank-Dump ..."
+sqlite3 /mnt/data/bitwarden/db.sqlite3 ".backup '/mnt/data/bitwarden/database-dumps/bitwarden-sqldump-`date +"%Y%m%d"`'"
+
+##
+## Dateien ins Repository übertragen
+## Gesichert werden hier beispielsweise die Ordner root, etc,
+## var/www und home
+## Ausserdem finden Sie hier gleich noch eine Liste Excludes,
+## die in kein Backup sollten und somit per default ausgeschlossen
+## werden.
+##
+
+echo "Übertrage Dateien ..."
+borg create -v --stats $REPOSITORY::'{now:%Y-%m-%d_%H:%M}' /mnt/data
+   
+echo "###### Backup beendet: $(date) ######"

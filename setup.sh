@@ -1,31 +1,64 @@
 sudo apt update && apt upgrade -y;
 
-sudo apt install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common \
-    dos2unix;
+# Add Docker's official GPG key:
+sudo apt install ca-certificates curl -y
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-dos2unix .env
+# Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
 
-export $(grep -v '^#' .env | xargs -d '\n')
+sudo apt update
 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -;
+# install docker
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable";
+# install better shell
+sudo apt install -y fish starship
+mkdir -p ~/.config/fish
+echo 'starship init fish | source' > ~/.config/fish/config.fish
 
-sudo apt update;
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose;
+# Add Fish auto-launch to .bashrc
+if ! grep -q "exec fish" ~/.bashrc; then
+    echo -e "\n# Launch Fish Shell\nif [[ \$- == *i* ]]; then\n    exec fish\nfi" >> ~/.bashrc
+fi
 
-mkdir -p $BASE_DATA_LOCATION/{database,traefik,nextcloud};
-touch $BASE_DATA_LOCATION/traefik/acme.json;
-chmod 600 $BASE_DATA_LOCATION/traefik/acme.json;
+# launch fish
+fish
 
-docker network create traefik-network;
-docker network create database-network;
-docker-compose up -d;
+# add env variables
+sudo apt install -y git lazygit
+curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+fisher install berk-karaal/loadenv.fish
+loadenv
+
+# install bork and backup cron script
+apt install -y borgbackup
+cp backup.sh /usr/local/bin/backup.sh
+echo '0 3 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' >> /etc/crontab
+
+# install micro and set default
+apt install -y micro
+set -gx EDITOR=micro
+
+# old bash way way
+# for line in (grep -v '^#' .env | grep -v '^$')
+#     set -gx (echo $line | cut -d = -f 1) (echo $line | cut -d = -f 2-)
+# end
+
+# should exists from copying old volume?
+# mkdir -p $BASE_DATA_LOCATION/{database,traefik,nextcloud};
+# touch $BASE_DATA_LOCATION/traefik/acme.json;
+# chmod 600 $BASE_DATA_LOCATION/traefik/acme.json;
+
+cd /home/personal-vps-builder
+docker network create traefik-network
+docker network create database-network
+docker compose up -d
